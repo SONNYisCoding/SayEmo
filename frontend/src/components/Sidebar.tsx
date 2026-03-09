@@ -1,6 +1,7 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 import type { ModelMetric } from '../types';
-import { Activity, Brain, Server, ShieldCheck } from 'lucide-react';
+import { Activity, Brain, Server, ShieldCheck, Home, FileText, CalendarRange } from 'lucide-react';
 
 interface SidebarProps {
     models: ModelMetric[];
@@ -23,10 +24,50 @@ export const Sidebar: React.FC<SidebarProps> = ({ models, selectedModel, onSelec
                 <p className="text-sm text-text-secondary mt-2 opacity-80">Speech Emotion Recognition</p>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="flex-1 overflow-y-auto p-4 space-y-8">
+
+                {/* Navigation Menu */}
+                <div>
+                    <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-4 px-2">
+                        Menu
+                    </h3>
+                    <nav className="space-y-1">
+                        <NavLink
+                            to="/"
+                            className={({ isActive }) => `flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${isActive
+                                    ? 'bg-primary-500/20 text-primary-300 font-semibold shadow-[0_0_15px_rgba(99,102,241,0.15)]'
+                                    : 'text-text-secondary hover:bg-white/10 hover:text-white'
+                                }`}
+                        >
+                            <Home className="w-5 h-5" /> Dashboard
+                        </NavLink>
+                        <NavLink
+                            to="/abstract"
+                            className={({ isActive }) => `flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${isActive
+                                    ? 'bg-primary-500/20 text-primary-300 font-semibold shadow-[0_0_15px_rgba(99,102,241,0.15)]'
+                                    : 'text-text-secondary hover:bg-white/10 hover:text-white'
+                                }`}
+                        >
+                            <FileText className="w-5 h-5" /> Abstract
+                        </NavLink>
+                        <NavLink
+                            to="/timeline"
+                            className={({ isActive }) => `flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${isActive
+                                    ? 'bg-primary-500/20 text-primary-300 font-semibold shadow-[0_0_15px_rgba(99,102,241,0.15)]'
+                                    : 'text-text-secondary hover:bg-white/10 hover:text-white'
+                                }`}
+                        >
+                            <CalendarRange className="w-5 h-5" /> Project Timeline
+                        </NavLink>
+                    </nav>
+                </div>
+
+                <div className="h-px bg-white/10 w-full" />
+
+                {/* Model Selection */}
                 <div>
                     <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-4 px-2 flex items-center gap-2">
-                        <Brain className="w-4 h-4" /> Available Models
+                        <Brain className="w-4 h-4" /> Inference Models
                     </h3>
                     <div className="space-y-2">
                         {models.map((model) => (

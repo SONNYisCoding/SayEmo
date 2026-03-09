@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.venv/
+.backend/venv/
+backend/venv/
+backend/models/
+*.pt
