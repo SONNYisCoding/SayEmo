@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sayemo-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount the models directory so you can easily add/swap models without rebuilding the image
+      - ./backend/models:/app/models
+    environment:
+      - FLASK_ENV=production
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sayemo-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend

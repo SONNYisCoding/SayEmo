@@ -241,45 +241,29 @@ def extract_features_for_wav2vec2(audio_file):
     return input_values
 
 def extract_features_for_3dcnn(audio_file):
-    import torchaudio.transforms as transforms
-    
     wav_io = convert_webm_to_wav(audio_file)
-    # Load the audio using librosa
-    waveform, sr = librosa.load(wav_io, sr=16000)
     
-    # Convert waveform to tensor
-    waveform = torch.tensor(waveform).unsqueeze(0) # (1, audio_length)
-    
-    # Feature extraction parameters (matching standard SER training scripts)
-    n_mels = 128
-    n_fft = 2048
-    hop_length = 512
-    
-    # Extract Mel-spectrogram
-    mel_transform = transforms.MelSpectrogram(
-        sample_rate=16000,
-        n_mels=n_mels,
-        n_fft=n_fft,
-        hop_length=hop_length
+    try:
+        y, sr = librosa.load(wav_io, sr=16000)
+        # Pad very short audio
+        min_len = int(0.5 * 16000)
+        if len(y) < min_len:
+            y = np.pad(y, (0, min_len - len(y)))
+    except Exception as e:
+        raise ValueError(f"Error loading {wav_io}: {e}")
+
+    mel = librosa.feature.melspectrogram(
+        y=y, sr=16000, n_fft=1024, hop_length=256,
+        n_mels=128, power=2.0
     )
-    amplitude_to_db = transforms.AmplitudeToDB()
+    log_mel = librosa.power_to_db(mel, ref=1.0)
     
-    melspec = mel_transform(waveform)
-    melspec_db = amplitude_to_db(melspec) # Shape: (1, n_mels, time_frames)
+    # Expected tensor shape for CNN3D_BiLSTM_Attention: (B, 1, T, 128, 1)
+    features = torch.tensor(log_mel, dtype=torch.float32)  # (128, T)
+    features = features.transpose(0, 1)  # (T, 128)
+    features = features.unsqueeze(0).unsqueeze(1).unsqueeze(-1)  # (1, 1, T, 128, 1)
     
-    # Fix for 3DCNN input shape requirements.
-    # The network has multiple 3D pooling layers that reduce the depth (D) dimension.
-    # If D=1, pooling crashes with 'Output size is too small'.
-    # We interpolate the time axis to exactly 128 frames, and sequence it as Depth=4, Width=32.
-    melspec_db = melspec_db.unsqueeze(0) # (1, 1, 128, time_frames)
-    
-    import torch.nn.functional as F
-    melspec_db = F.interpolate(melspec_db, size=(128, 128), mode='bilinear', align_corners=False) # (1, 1, 128, 128)
-    
-    # Reshape to (Batch=1, Channel=1, Depth=4, Height=128, Width=32)
-    melspec_3d = melspec_db.view(1, 1, 128, 4, 32).transpose(2, 3) 
-    
-    return melspec_3d
+    return features
 
 
 # ==============================================================
