@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './pages/Dashboard';
 import { Abstract } from './pages/Abstract';
 import { Timeline } from './pages/Timeline';
+import { Menu, X } from 'lucide-react';
 import type { ModelMetric } from './types';
 
 const MOCK_MODELS: ModelMetric[] = [
@@ -13,6 +14,7 @@ const MOCK_MODELS: ModelMetric[] = [
 
 function Layout() {
   const [selectedModel, setSelectedModel] = useState<string>(MOCK_MODELS[0].id);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const selectedModelName = MOCK_MODELS.find(m => m.id === selectedModel)?.name || 'Unknown Model';
 
   return (
@@ -24,13 +26,25 @@ function Layout() {
       </div>
 
       <div className="relative z-10 flex w-full">
+        {/* Mobile Header */}
+        <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-surface/80 backdrop-blur-xl border-b border-white/10 z-50 flex items-center justify-between px-4">
+          <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-indigo-300">
+            SayEmo AI
+          </span>
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/5 rounded-lg border border-white/10 text-white">
+            {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+
         <Sidebar
           models={MOCK_MODELS}
           selectedModel={selectedModel}
           onSelectModel={setSelectedModel}
+          isOpen={isSidebarOpen}
+          setIsOpen={setIsSidebarOpen}
         />
 
-        <main className="flex-1 overflow-y-auto p-12 relative">
+        <main className="flex-1 overflow-y-auto p-4 pt-20 md:p-12 relative w-full overflow-x-hidden">
           <Outlet context={{ selectedModel, selectedModelName }} />
         </main>
       </div>
