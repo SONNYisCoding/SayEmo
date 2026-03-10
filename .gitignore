@@ -28,3 +28,5 @@ dist-ssr
 backend/venv/
 backend/models/
 *.pt
+.env
+.env.production

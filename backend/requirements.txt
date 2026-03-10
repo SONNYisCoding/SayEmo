@@ -1,9 +1,6 @@
 Flask==3.0.0
 flask-cors==4.0.0
 Werkzeug==3.0.1
-torch
-torchvision
-torchaudio
 transformers
 librosa
 numpy<2.0.0

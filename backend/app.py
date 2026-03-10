@@ -178,9 +178,11 @@ loaded_models = {}
 def load_all_models():
     """Load all models at startup to avoid delay during inference."""
     try:
+        model_dir = os.environ.get('MODEL_DIR', 'models')
+        
         # Load Model 1
         model1 = Wav2Vec2_BiLSTM_Attention()
-        model1_path = 'models/Wav2Vec2-BiLSTM-Attention.pt'
+        model1_path = os.path.join(model_dir, 'Wav2Vec2-BiLSTM-Attention.pt')
         if os.path.exists(model1_path):
             model1.load_state_dict(torch.load(model1_path, map_location=device))
             model1.to(device)
@@ -191,7 +193,7 @@ def load_all_models():
             
         # Load Model 2
         model2 = CNN3D_BiLSTM_Attention()
-        model2_path = 'models/3dcnn-BiLSTM-Attention.pt'
+        model2_path = os.path.join(model_dir, '3dcnn-BiLSTM-Attention.pt')
         if os.path.exists(model2_path):
             model2.load_state_dict(torch.load(model2_path, map_location=device))
             model2.to(device)
@@ -318,4 +320,5 @@ def predict_emotion():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)

@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements
 COPY requirements.txt .
 
-# Install python dependencies
-# Note: This will install the default PyTorch which may be CPU+GPU and quite large.
+# Install CPU-only PyTorch dependencies
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Install the remaining python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
