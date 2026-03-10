@@ -33,6 +33,7 @@ SayEmo is a modern web application designed for Speech Emotion Recognition (SER)
 
 - Node.js (v18 or higher recommended)
 - Python (3.9 or higher recommended)
+- FFmpeg (Install via Chocolatey: `choco install ffmpeg`)
 
 ### Installation & Setup
 

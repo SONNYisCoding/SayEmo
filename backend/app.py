@@ -72,117 +72,101 @@ class Wav2Vec2_BiLSTM_Attention(nn.Module):
         return logits
 
 
-# -------------------- Building blocks --------------------
-class Conv3DBlock(nn.Module):
-    def __init__(self, in_c, out_c, kernel_size=3, stride=1,
-                 padding=1, pool_size=(1, 2, 2), dropout=0.2):
+class TemporalAttention(nn.Module):
+    def __init__(self, hidden_dim, dropout_rate=0.5):
         super().__init__()
-        self.conv1 = nn.Conv3d(in_c, out_c, kernel_size, stride, padding)
-        self.bn1   = nn.BatchNorm3d(out_c)
-        self.conv2 = nn.Conv3d(out_c, out_c, kernel_size, stride, padding)
-        self.bn2   = nn.BatchNorm3d(out_c)
-        self.pool  = nn.MaxPool3d(pool_size)
-        self.drop  = nn.Dropout3d(dropout)
-        self.residual = (nn.Sequential(nn.Conv3d(in_c, out_c, 1),
-                                       nn.BatchNorm3d(out_c))
-                         if in_c != out_c else nn.Identity())
-
-    def forward(self, x):
-        res = self.residual(x)
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))
-        if res.shape != x.shape:
-            res = F.adaptive_avg_pool3d(res, x.shape[2:])
-        x = x + res
-        x = self.pool(x)
-        x = self.drop(x)
-        return x
-
-
-class SE3D(nn.Module):
-    """Squeeze-and-Excitation (channel attention) for 3-D feature maps."""
-    def __init__(self, channels, reduction=8):
-        super().__init__()
-        self.fc = nn.Sequential(
-            nn.Linear(channels, channels // reduction),
-            nn.ReLU(),
-            nn.Linear(channels // reduction, channels),
-            nn.Sigmoid()
+        self.attn = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.Tanh(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(hidden_dim // 2, 1)
         )
 
     def forward(self, x):
-        b, c = x.shape[:2]
-        w = x.view(b, c, -1).mean(dim=2)
-        w = self.fc(w).view(b, c, 1, 1, 1)
-        return x * w
+        """
+        x: (B, T, D)
+        """
+        scores = self.attn(x)        # (B, T, 1)
+        weights = torch.softmax(scores, dim=1)
+        context = torch.sum(weights * x, dim=1)
+        return context, weights
 
 # Architecture 2: 3DCNN + BiLSTM + Attention
 class CNN3D_BiLSTM_Attention(nn.Module):
-    def __init__(self, num_classes=NUM_CLASSES):
+    def __init__(self, num_classes=7, dropout_rate=0.5):
         super().__init__()
-        # Block 1  (B,1,D,128,W) → pool(1,2,2) → (B,32,D,64,W/2)
-        self.block1 = Conv3DBlock(1,  32,  pool_size=(1, 2, 2), dropout=0.15)
-        self.se1    = SE3D(32)
-        # Block 2  → (B,64,D,32,W/4)
-        self.block2 = Conv3DBlock(32, 64,  pool_size=(1, 2, 2), dropout=0.2)
-        self.se2    = SE3D(64)
-        # Block 3  → (B,128,D/2,16,W/8)
-        self.block3 = Conv3DBlock(64, 128, pool_size=(2, 2, 2), dropout=0.25)
-        self.se3    = SE3D(128)
-        # Block 4  → (B,256,D/4,8,W/16)
-        self.block4 = Conv3DBlock(128, 256, pool_size=(2, 2, 2), dropout=0.3)
-        self.se4    = SE3D(256)
 
-        # Multi-scale parallel convolutions
-        self.ms_small  = nn.Sequential(
-            nn.Conv3d(256, 128, kernel_size=1),
-            nn.BatchNorm3d(128), nn.ReLU())
-        self.ms_medium = nn.Sequential(
-            nn.Conv3d(256, 128, kernel_size=(3, 1, 3), padding=(1, 0, 1)),
-            nn.BatchNorm3d(128), nn.ReLU())
-        self.ms_large  = nn.Sequential(
-            nn.Conv3d(256, 128, kernel_size=3, padding=1),
-            nn.BatchNorm3d(128), nn.ReLU())
+        self.lstm_hidden = 192
+        lstm_output_dim = self.lstm_hidden * 2
 
-        # Pooling + classifier
-        self.gap = nn.AdaptiveAvgPool3d(1)
-        self.gmp = nn.AdaptiveMaxPool3d(1)
-        # 128*3 * 2 = 768
-        self.classifier = nn.Sequential(
-            nn.Linear(768, 512),
-            nn.BatchNorm1d(512), nn.ReLU(), nn.Dropout(0.5),
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(0.4),
-            nn.Linear(256, num_classes)
+        # -------- Temporal CNN (Conv3D) --------
+        self.cnn = nn.Sequential(
+            nn.Conv3d(1, 32, kernel_size=(5, 3, 1), padding=(2, 1, 0)),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            nn.MaxPool3d((2, 2, 1)),   # ↓T, ↓F
+
+            nn.Conv3d(32, 64, kernel_size=(5, 3, 1), padding=(2, 1, 0)),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            nn.MaxPool3d((2, 2, 1)),   # ↓T, ↓F
+
+            nn.Conv3d(64, 128, kernel_size=(3, 3, 1), padding=(1, 1, 0)),
+            nn.BatchNorm3d(128),
+            nn.ReLU(),
+            nn.MaxPool3d((1, 2, 1))    # chỉ ↓F
         )
-        self._init_weights()
 
-    def _init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv3d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out',
-                                        nonlinearity='relu')
-            elif isinstance(m, nn.BatchNorm3d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.Linear):
-                nn.init.xavier_normal_(m.weight)
+        # Preserve T, collapse F and W
+        self.pool = nn.AdaptiveAvgPool3d((None, 1, 1))
+
+        # Project CNN channels → LSTM dim
+        self.proj = nn.Linear(128, 256)
+
+        # -------- BiLSTM --------
+        self.lstm = nn.LSTM(
+            input_size=256,
+            hidden_size=self.lstm_hidden,
+            num_layers=2,
+            dropout=dropout_rate,
+            bidirectional=True,
+            batch_first=True
+        )
+
+        # -------- Temporal Attention --------
+        self.attention = TemporalAttention(
+            hidden_dim=lstm_output_dim,
+            dropout_rate=dropout_rate
+        )
+
+        # -------- Classifier --------
+        self.classifier = nn.Sequential(
+            nn.Linear(lstm_output_dim, self.lstm_hidden),
+            nn.BatchNorm1d(self.lstm_hidden),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(self.lstm_hidden, num_classes)
+        )
 
     def forward(self, x):
-        x = self.se1(self.block1(x))
-        x = self.se2(self.block2(x))
-        x = self.se3(self.block3(x))
-        x = self.se4(self.block4(x))
+        """
+        x: (B, 1, T, 128, 1)
+        """
+        x = self.cnn(x)
+        x = self.pool(x)  # (B, C, T, 1, 1)
 
-        ms1 = self.ms_small(x)
-        ms2 = self.ms_medium(x)
-        ms3 = self.ms_large(x)
-        ms  = torch.cat([ms1, ms2, ms3], dim=1)        # (B, 384, ...)
+        B, C, T, _, _ = x.shape
+        x = x.permute(0, 2, 1, 3, 4).contiguous()
+        x = x.view(B, T, C)           # (B, T, 128)
 
-        avg_p = self.gap(ms).flatten(1)                 # (B, 384)
-        max_p = self.gmp(ms).flatten(1)                 # (B, 384)
-        feat  = torch.cat([avg_p, max_p], dim=1)        # (B, 768)
-        return self.classifier(feat)
+        x = self.proj(x)              # (B, T, 256)
+
+        lstm_out, _ = self.lstm(x)    # (B, T, 384)
+
+        context, attn_weights = self.attention(lstm_out)
+
+        logits = self.classifier(context)
+        return logits
 
 # ==============================================================
 # 2. LOAD MODELS INTO MEMORY

@@ -1,105 +1,109 @@
 import React, { useState } from 'react';
-import { BookOpen, Save, CheckCircle2, UploadCloud } from 'lucide-react';
+import { UploadCloud, FileText, Github, PlaySquare } from 'lucide-react';
 
 export const Abstract: React.FC = () => {
     const [abstract, setAbstract] = useState('');
-    const [saved, setSaved] = useState(false);
-
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-    const handleSave = () => {
-        // Here you would typically save to your backend
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-    };
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const text = e.target?.result;
-            if (typeof text === 'string') {
-                setAbstract(text);
-            }
-        };
-        reader.readAsText(file);
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
 
-        // Reset input so the same file can be selected again if needed
+        if (fileExtension === 'txt' || fileExtension === 'md') {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target?.result;
+                if (typeof text === 'string') {
+                    setAbstract(text);
+                }
+            };
+            reader.readAsText(file);
+        } else if (fileExtension === 'docx' || fileExtension === 'pdf') {
+            setAbstract(`[Content extracted from ${file.name} via code]\n\nNote: This is a placeholder for the paper extraction requirement (.docx, .pdf).`);
+        } else {
+            setAbstract('Unsupported file format.');
+        }
+
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8">
-            <header className="space-y-2">
-                <h1 className="text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
-                    Project Abstract
-                    <BookOpen className="w-8 h-8 text-primary-400" />
+        <div className="max-w-5xl mx-auto pb-16 w-full pt-8 relative">
+            <div className="absolute top-0 right-0 z-10">
+                <input
+                    type="file"
+                    accept=".docx,.txt,.md,.pdf"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                />
+            </div>
+
+            <div className="flex flex-col items-center text-center space-y-6 pt-4">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+                    SayEmo | Emotions in Your Voice
                 </h1>
-                <p className="text-text-secondary text-lg">Provide a summary of your Speech Emotion Recognition project.</p>
-            </header>
 
-            <div className="bg-surface/40 backdrop-blur-md border border-white/10 rounded-3xl p-8 relative shadow-2xl">
-                <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-                    <BookOpen className="w-32 h-32" />
-                </div>
-
-                <div className="relative z-10 space-y-6">
-                    <div className="flex items-center justify-between mb-3">
-                        <label htmlFor="abstract" className="block text-sm font-semibold text-text-secondary uppercase tracking-wider">
-                            Abstract Content
-                        </label>
-
-                        <div>
-                            <input
-                                type="file"
-                                accept=".txt,.md"
-                                ref={fileInputRef}
-                                onChange={handleFileUpload}
-                                className="hidden"
-                            />
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="flex items-center gap-2 text-sm text-primary-400 hover:text-primary-300 transition-colors bg-primary-500/10 hover:bg-primary-500/20 px-3 py-1.5 rounded-lg border border-primary-500/20"
-                            >
-                                <UploadCloud className="w-4 h-4" />
-                                Import from File (.txt, .md)
-                            </button>
-                        </div>
+                <div className="flex flex-wrap justify-center gap-8 md:gap-16 pt-8">
+                    <div className="flex flex-col items-center">
+                        <span className="text-primary-400 font-bold text-lg md:text-xl">Nguyen Minh Triet</span>
+                        <span className="text-text-secondary/60 text-sm mt-1.5">Contributor</span>
                     </div>
-                    <textarea
-                        id="abstract"
-                        value={abstract}
-                        onChange={(e) => setAbstract(e.target.value)}
-                        placeholder="Enter the abstract of your project here. E.g. 'In this project, we explore the use of advanced deep learning models such as 3DCNN and Wav2Vec2.0 to accurately recognize human emotion from speech signals...'"
-                        className="w-full h-80 bg-black/20 border border-white/10 rounded-2xl p-6 text-white placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary-500/50 resize-y transition-all"
-                    />
+                    <div className="flex flex-col items-center">
+                        <span className="text-primary-400 font-bold text-lg md:text-xl">Nguyen Quach Lam Giang</span>
+                        <span className="text-text-secondary/60 text-sm mt-1.5">Contributor</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                        <span className="text-primary-400 font-bold text-lg md:text-xl">Bui Tan Phat</span>
+                        <span className="text-text-secondary/60 text-sm mt-1.5">Contributor</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                        <span className="text-primary-400 font-bold text-lg md:text-xl">Do Khang</span>
+                        <span className="text-text-secondary/60 text-sm mt-1.5">Contributor</span>
+                    </div>
                 </div>
 
-                <div className="flex justify-end">
-                    <button
-                        onClick={handleSave}
-                        disabled={!abstract.trim()}
-                        className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all shadow-lg text-sm ${saved
-                            ? 'bg-emerald-500 text-white shadow-emerald-500/25'
-                            : 'bg-primary-600 hover:bg-primary-500 text-white shadow-primary-600/25 disabled:opacity-50 disabled:cursor-not-allowed'
-                            }`}
-                    >
-                        {saved ? (
-                            <>
-                                <CheckCircle2 className="w-5 h-5" />
-                                Saved Successfully
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-5 h-5" />
-                                Save Abstract
-                            </>
-                        )}
+                <div className="flex flex-wrap justify-center gap-6 pt-10">
+                    <button className="flex items-center gap-3 bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-full text-sm font-bold transition-all hover:-translate-y-0.5 shadow-lg border border-white/5 tracking-wider">
+                        <FileText className="w-5 h-5 text-primary-400" />
+                        REPORT PDF
                     </button>
+                    <button className="flex items-center gap-3 bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-full text-sm font-bold transition-all hover:-translate-y-0.5 shadow-lg border border-white/5 tracking-wider">
+                        <Github className="w-5 h-5 text-primary-400" />
+                        SOURCE CODE
+                    </button>
+                    <button className="flex items-center gap-3 bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-full text-sm font-bold transition-all hover:-translate-y-0.5 shadow-lg border border-white/5 tracking-wider">
+                        <PlaySquare className="w-5 h-5 text-primary-400" />
+                        DEMO VIDEO
+                    </button>
+                </div>
+            </div>
+
+            <div className="w-full h-[1px] bg-white/10 mt-14 mb-12"></div>
+
+            <div className="max-w-[900px] mx-auto">
+                <h2 className="text-4xl font-extrabold text-white text-center mb-10 tracking-tight">Abstract</h2>
+
+                <div className="text-text-secondary text-lg md:text-xl leading-relaxed whitespace-pre-wrap font-medium">
+                    {abstract ? (
+                        <div className="bg-black/20 border border-white/5 rounded-3xl p-10 shadow-inner">
+                            {abstract}
+                        </div>
+                    ) : (
+                        <div className="text-center opacity-80 italic space-y-4 py-10 bg-black/20 border border-white/5 rounded-3xl p-10 relative overflow-hidden">
+                            <p>No abstract content loaded yet.</p>
+                            <p className="text-base text-text-secondary/80">Click the "Import Paper" button above to extract content.</p>
+
+                            <div className="mt-10 text-left not-italic opacity-100 text-text-secondary text-lg leading-relaxed max-h-40 overflow-hidden relative blur-[1px]">
+                                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0a0a0a]/80 pointer-events-none z-10"></div>
+                                <p>Put Abstract here</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
