@@ -1,38 +1,62 @@
-# SayEmo - Speech Emotion Recognition Dashboard
+<p align="center">
+  <img src="frontend/public/logo.png" alt="SayEmo Logo" width="120" />
+</p>
 
-SayEmo is a modern web application designed for Speech Emotion Recognition (SER). It provides an intuitive interface to analyze emotions from voice recordings using various AI models.
+<h1 align="center">SayEmo - Speech Emotion Recognition</h1>
 
-## Features
+<p align="center">
+  <a href="https://sayemo.web.app">
+    <img src="https://img.shields.io/badge/🌐_Live_Demo-sayemo.web.app-6366f1?style=for-the-badge" alt="Live Demo" />
+  </a>
+</p>
 
-- **Model Selection:** Choose from multiple available SER models (e.g., Wav2Vec2.0, HuBERT).
-- **Audio Upload:** Drag and drop or browse to upload `.wav`, `.mp3`, or `.ogg` audio files.
+<p align="center">
+  A modern web application for Speech Emotion Recognition (SER).<br/>
+  Upload an audio file or record your voice to detect emotions using deep learning models.
+</p>
+
+---
+
+## ✨ Features
+
+- **Model Selection:** Choose between multiple SER models — Wav2Vec2 BiLSTM Attention & 3DCNN BiLSTM Attention.
+- **Audio Upload:** Drag & drop or browse to upload `.wav`, `.mp3`, or `.ogg` audio files.
 - **Live Recording:** Record your voice directly from the browser using the Web MediaRecorder API.
 - **Real-time Inference:** Connects to a Flask backend to process audio and predict emotions.
-- **Visualization:** Beautiful and interactive bar charts to display emotion probability distributions using Recharts.
-- **Modern UI:** Built with React, Tailwind CSS, Lucide Icons, featuring a responsive, dark-mode glassmorphism design.
+- **Visualization:** Interactive bar charts displaying emotion probability distributions (Recharts).
+- **Modern UI:** React + Tailwind CSS with a responsive, dark-mode glassmorphism design and mobile support.
 
-## Tech Stack
+## 🚀 Live Demo
+
+👉 **Try it now:** [https://sayemo.web.app](https://sayemo.web.app)
+
+> Upload a voice recording or use your microphone to analyze emotions in real-time!
+
+## 🛠️ Tech Stack
 
 ### Frontend
 - **Framework:** React 19+ (Vite)
-- **Language:** TypeScript (`TSX`)
-- **Styling:** Tailwind CSS (v4)
+- **Language:** TypeScript (TSX)
+- **Styling:** Tailwind CSS v4
 - **Icons:** Lucide React
 - **Charts:** Recharts
 - **HTTP Client:** Axios
+- **Hosting:** Firebase Hosting
 
 ### Backend
 - **Framework:** Python Flask
+- **Deep Learning:** PyTorch (CPU), Wav2Vec2, 3DCNN
+- **Audio Processing:** Librosa, Pydub, FFmpeg
 - **CORS:** Flask-CORS
-- **Server:** Werkzeug
-- **AI Integration Placeholder:** Ready to integrate Librosa, PyTorch, or TensorFlow models.
+- **Hosting:** Google Cloud Run
+- **Model Storage:** Google Cloud Storage
 
-## Getting Started
+## 📦 Getting Started (Local Development)
 
 ### Prerequisites
 
-- Node.js (v18 or higher recommended)
-- Python (3.9 or higher recommended)
+- Node.js (v18+)
+- Python (3.9+)
 - FFmpeg (Install via Chocolatey: `choco install ffmpeg`)
 
 ### Installation & Setup
@@ -44,7 +68,6 @@ SayEmo is a modern web application designed for Speech Emotion Recognition (SER)
    ```
 
 2. **Frontend Setup:**
-   Navigate to the `frontend` directory, install dependencies, and start the development server:
    ```bash
    cd frontend
    npm install
@@ -53,36 +76,48 @@ SayEmo is a modern web application designed for Speech Emotion Recognition (SER)
    The frontend will run on `http://localhost:5173`.
 
 3. **Backend Setup:**
-   Navigate to the `backend` directory, create a virtual environment, install requirements, and start the Flask API:
    ```bash
    cd backend
    python -m venv venv
-   
+
    # Windows:
    .\venv\Scripts\Activate.ps1
    # macOS/Linux:
    source venv/bin/activate
-   
+
    pip install -r requirements.txt
    python app.py
    ```
-   The backend will run on `http://localhost:5000` or `http://127.0.0.1:5000`.
+   The backend will run on `http://localhost:5000`.
 
-## Integrating AI Models
+## 🧠 AI Models
 
-By default, the backend runs a **Mock API** that returns random probability distributions for demonstration purposes.
+The backend uses two deep learning architectures for emotion recognition:
 
-To integrate real models:
-1. Place your compiled model files (e.g., `.h5`, `.pth`) in a `backend/models` directory (you may need to create this directory).
-2. Modify `backend/app.py` to:
-   - Load the AI libraries (TensorFlow/PyTorch, Librosa).
-   - Load the model files at application startup.
-   - Process the incoming audio file from `request.files['audio']`.
-   - Run inference and return the actual emotion probabilities matching the expected JSON structure.
+| Model | Architecture | Accuracy | F1-Score |
+|-------|-------------|----------|----------|
+| Wav2Vec2 BiLSTM Attention | Wav2Vec2 → BiLSTM → Attention → Classifier | 89.0% | 88.0% |
+| 3DCNN BiLSTM Attention | 3D CNN → BiLSTM → Temporal Attention → Classifier | 92.0% | 91.0% |
 
-## Deployment Strategy (Google Cloud & Firebase)
+Model weights (`.pt` files) are stored in Google Cloud Storage and mounted at runtime via Cloud Storage FUSE.
 
-As recommended for a scalable architecture:
-- **Backend:** Package the Flask app via Docker and deploy it to **Google Cloud Run** to handle heavy ML inference workloads (ensure at least 2GB of RAM).
-- **Frontend:** Build the Vite app and deploy it to **Firebase Hosting** for fast global content delivery.
-- **Database:** Use **Firestore** to store model metrics (accuracy, F1-score) and dynamically fetch them in the frontend for the model selection sidebar.
+## ☁️ Deployment
+
+| Component | Platform | URL |
+|-----------|----------|-----|
+| Frontend | Firebase Hosting | [sayemo.web.app](https://sayemo.web.app) |
+| Backend | Google Cloud Run | `asia-southeast1` region |
+| Models | Google Cloud Storage | `dbm-dat-dataset` bucket |
+
+### Deploy Frontend
+```bash
+cd frontend
+npm run build
+firebase deploy --only hosting
+```
+
+### Deploy Backend
+```bash
+cd backend
+gcloud run deploy sayemo-backend --source . --region asia-southeast1
+```
