@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UploadCloud, FileText, Github, PlaySquare } from 'lucide-react';
+import { FileText, Github, PlaySquare } from 'lucide-react';
 
 export const Abstract: React.FC = () => {
     const [abstract, setAbstract] = useState('');

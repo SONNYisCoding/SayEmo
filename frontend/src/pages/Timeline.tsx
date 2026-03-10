@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Monitor, Cpu, Network, CheckCircle2 } from 'lucide-react';
+import { Monitor, Cpu, Network } from 'lucide-react';
 
 interface TimelineItem {
     id: number;
@@ -14,42 +14,34 @@ const timelineData: TimelineItem[] = [
     {
         id: 1,
         title: "Research & Initiation",
-        subtitle: "Week 37-39",
-        description: "Study Mech-Eye 3D Camera",
+        subtitle: "Week 1-3",
+        description: "Study SER Methods",
         icon: <Monitor className="w-5 h-5 text-white" />,
         iconBg: "bg-blue-500"
     },
     {
         id: 2,
-        title: "System Setup",
-        subtitle: "Week 39-40",
-        description: "Setup Camera & 2D/3D Processing",
+        title: "Dataset Setup",
+        subtitle: "Week 3-5",
+        description: "Setup Dataset and Preprocessing",
         icon: <Monitor className="w-5 h-5 text-white" />,
         iconBg: "bg-blue-500"
     },
     {
         id: 3,
-        title: "Data & AI Training",
-        subtitle: "Week 41-43",
-        description: "Data Collection & Training YOLOv8/U-Net",
+        title: "Training Models",
+        subtitle: "Week 5-7",
+        description: "Training SER Models and Evaluate",
         icon: <Cpu className="w-5 h-5 text-white" />,
         iconBg: "bg-orange-500"
     },
     {
         id: 4,
-        title: "System Integration",
-        subtitle: "Week 43-46",
-        description: "Inference Pipeline & Skeletonization",
+        title: "Paper Completion and Report",
+        subtitle: "Week 7-8",
+        description: "Complete Paper and Report",
         icon: <Network className="w-5 h-5 text-white" />,
         iconBg: "bg-blue-500"
-    },
-    {
-        id: 5,
-        title: "Finalization",
-        subtitle: "Week 46-49",
-        description: "Final Report & Optimization",
-        icon: <CheckCircle2 className="w-5 h-5 text-white" />,
-        iconBg: "bg-emerald-500"
     }
 ];
 
@@ -61,7 +53,7 @@ export const Timeline: React.FC = () => {
                     Project Timeline
                 </h1>
                 <p className="text-text-secondary text-lg font-medium">
-                    [Week 37] 08/09/2025 - 14/12/2025 [Week 49]
+                    [Week 1] 06/01/2026 - 15/10/2025 [Week 8]
                 </p>
             </header>
 
