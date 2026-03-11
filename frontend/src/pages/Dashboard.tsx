@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import axios from 'axios';
 import { useOutletContext } from 'react-router-dom';
 
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const chartColors = [
     '#6366f1', '#ec4899', '#8b5cf6', '#14b8a6', '#f59e0b', '#ef4444', '#3b82f6',
@@ -94,9 +94,7 @@ export const Dashboard: React.FC = () => {
             formData.append('audio', file, 'audio_sample.webm');
             formData.append('modelName', selectedModel);
 
-            const response = await axios.post<PredictionResponse>(`${BACKEND_URL}/api/predict`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const response = await axios.post<PredictionResponse>(`${BACKEND_URL}/api/predict`, formData);
 
             setResult(response.data);
         } catch (err) {

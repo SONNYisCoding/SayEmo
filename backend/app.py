@@ -172,38 +172,62 @@ class CNN3D_BiLSTM_Attention(nn.Module):
 # 2. LOAD MODELS INTO MEMORY
 # ==============================================================
 
-# We will store loaded models in a dictionary
 loaded_models = {}
+load_errors = []
 
 def load_all_models():
     """Load all models at startup to avoid delay during inference."""
+    global load_errors
+    load_errors = []
+    model_dir = os.environ.get('MODEL_DIR', 'models')
+    print(f"[MODEL LOADER] Looking for models in: {model_dir}")
+    print(f"[MODEL LOADER] Directory exists: {os.path.exists(model_dir)}")
+    if os.path.exists(model_dir):
+        print(f"[MODEL LOADER] Files in model_dir: {os.listdir(model_dir)}")
+    
+    # Load Model 1 — Wav2Vec2 BiLSTM Attention
     try:
-        model_dir = os.environ.get('MODEL_DIR', 'models')
-        
-        # Load Model 1
-        model1 = Wav2Vec2_BiLSTM_Attention()
         model1_path = os.path.join(model_dir, 'Wav2Vec2-BiLSTM-Attention.pt')
+        print(f"[MODEL LOADER] Model1 path exists: {os.path.exists(model1_path)}")
         if os.path.exists(model1_path):
-            model1.load_state_dict(torch.load(model1_path, map_location=device))
+            model1 = Wav2Vec2_BiLSTM_Attention()
+            model1.load_state_dict(torch.load(model1_path, map_location=device, weights_only=False))
             model1.to(device)
             model1.eval()
-            # The key 'wav2vec2-bilstm' must match the 'id' in MOCK_MODELS in React frontend
             loaded_models['wav2vec2-bilstm'] = model1 
-            print("Loaded Model 1: Wav2Vec2_BiLSTM_Attention")
-            
-        # Load Model 2
-        model2 = CNN3D_BiLSTM_Attention()
+            print("[MODEL LOADER] ✅ Loaded Model 1: Wav2Vec2_BiLSTM_Attention")
+        else:
+            msg = f"Model1 NOT FOUND at {model1_path}"
+            print(f"[MODEL LOADER] ❌ {msg}")
+            load_errors.append(msg)
+    except Exception as e:
+        import traceback
+        msg = f"Model1 load error: {str(e)}"
+        print(f"[MODEL LOADER] ❌ {msg}")
+        traceback.print_exc()
+        load_errors.append(msg)
+        
+    # Load Model 2 — 3DCNN BiLSTM Attention
+    try:
         model2_path = os.path.join(model_dir, '3dcnn-BiLSTM-Attention.pt')
+        print(f"[MODEL LOADER] Model2 path exists: {os.path.exists(model2_path)}")
         if os.path.exists(model2_path):
-            model2.load_state_dict(torch.load(model2_path, map_location=device))
+            model2 = CNN3D_BiLSTM_Attention()
+            model2.load_state_dict(torch.load(model2_path, map_location=device, weights_only=False))
             model2.to(device)
             model2.eval()
-            # The key '3dcnn-bilstm' must match the 'id' in frontend
             loaded_models['3dcnn-bilstm'] = model2
-            print("Loaded Model 2: 3DCNN_BiLSTM_Attention")
-            
+            print("[MODEL LOADER] ✅ Loaded Model 2: 3DCNN_BiLSTM_Attention")
+        else:
+            msg = f"Model2 NOT FOUND at {model2_path}"
+            print(f"[MODEL LOADER] ❌ {msg}")
+            load_errors.append(msg)
     except Exception as e:
-        print(f"Error loading models: {e}")
+        import traceback
+        msg = f"Model2 load error: {str(e)}"
+        print(f"[MODEL LOADER] ❌ {msg}")
+        traceback.print_exc()
+        load_errors.append(msg)
 
 # Call this immediately when server starts
 load_all_models()
@@ -272,8 +296,43 @@ def extract_features_for_3dcnn(audio_file):
 # 4. API ENDPOINT
 # ==============================================================
 
+@app.route('/api/health', methods=['GET'])
+def health():
+    model_dir = os.environ.get('MODEL_DIR', 'models')
+    dir_exists = os.path.exists(model_dir)
+    files = os.listdir(model_dir) if dir_exists else []
+    return jsonify({
+        'status': 'ok',
+        'model_dir': model_dir,
+        'dir_exists': dir_exists,
+        'files_in_dir': files,
+        'loaded_models': list(loaded_models.keys()),
+        'load_errors': load_errors,
+    })
+
+@app.route('/api/reload', methods=['GET'])
+def reload_models():
+    loaded_models.clear()
+    load_all_models()
+    model_dir = os.environ.get('MODEL_DIR', 'models')
+    dir_exists = os.path.exists(model_dir)
+    files = os.listdir(model_dir) if dir_exists else []
+    return jsonify({
+        'status': 'reload_complete',
+        'model_dir': model_dir,
+        'dir_exists': dir_exists,
+        'files_in_dir': files,
+        'loaded_models': list(loaded_models.keys()),
+        'load_errors': load_errors,
+    })
+
 @app.route('/api/predict', methods=['POST'])
 def predict_emotion():
+    # Lazy-load models if they weren't loaded at startup (GCS FUSE may not be ready immediately)
+    if len(loaded_models) == 0:
+        print("[PREDICT] No models loaded yet, attempting lazy load...")
+        load_all_models()
+
     if 'audio' not in request.files:
         return jsonify({'error': 'No audio file provided'}), 400
     
@@ -284,7 +343,15 @@ def predict_emotion():
     
     # Check if we have this model loaded
     if selected_model_id not in loaded_models:
-        return jsonify({'error': f'Model {selected_model_id} not loaded or invalid'}), 400
+        model_dir = os.environ.get('MODEL_DIR', 'models')
+        available = list(loaded_models.keys())
+        dir_files = os.listdir(model_dir) if os.path.exists(model_dir) else []
+        return jsonify({
+            'error': f'Model {selected_model_id} not loaded or invalid',
+            'loaded_models': available,
+            'model_dir': model_dir,
+            'files_in_dir': dir_files
+        }), 400
         
     model = loaded_models[selected_model_id]
     
