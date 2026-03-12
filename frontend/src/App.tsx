@@ -8,9 +8,9 @@ import { Menu, X } from 'lucide-react';
 import type { ModelMetric } from './types';
 
 const MOCK_MODELS: ModelMetric[] = [
-  { id: 'wav2vec2-bilstm', name: 'Wav2Vec2 BiLSTM Attention', accuracy: 0.89, f1_score: 0.88, status: 'active' },
-  { id: '3dcnn-bilstm', name: '3DCNN BiLSTM Attention', accuracy: 0.92, f1_score: 0.91, status: 'active' },
-  { id: 'wav2vec2-transformer', name: 'Wav2Vec2 Transformer', accuracy: 0.90, f1_score: 0.89, status: 'active' },
+  { id: 'wav2vec2-bilstm', name: 'Wav2Vec2 BiLSTM Attention', accuracy: 0.80, f1_score: 0.82, status: 'active' },
+  { id: '3dcnn-bilstm', name: '3DCNN BiLSTM Attention', accuracy: 0.89, f1_score: 0.89, status: 'active' },
+  { id: 'wav2vec2-transformer', name: 'Wav2Vec2 Transformer', accuracy: 0.86, f1_score: 0.86, status: 'active' },
 ];
 
 function Layout() {
