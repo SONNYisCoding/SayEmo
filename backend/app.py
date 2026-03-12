@@ -21,6 +21,55 @@ EMOTIONS = ['Happy', 'Sad', 'Angry', 'Neutral', 'Surprise', 'Fear', 'Disgust']
 # 1. DEFINE YOUR MODEL ARCHITECTURES
 # ==============================================================
 
+class Wav2Vec2_Transformer(nn.Module):
+    def __init__(self, num_classes=7, frozen=True, nhead=8, num_layers=2):
+        super().__init__()
+        # 1. Load pre-trained Wav2Vec2 (Output hidden_size = 768)
+        self.wav2vec2 = Wav2Vec2Model.from_pretrained("facebook/wav2vec2-base")
+
+        if frozen:
+            for param in self.wav2vec2.parameters():
+                param.requires_grad = False
+
+        # 2. Transformer Encoder Layer
+        # d_model phải khớp với hidden_size của Wav2Vec2 (768)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=768, 
+            nhead=nhead, 
+            dim_feedforward=1024,
+            dropout=0.1,
+            batch_first=True
+        )
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+
+        # 3. Classifier
+        # Sau Transformer, ta thường pooling (Mean/Max) hoặc lấy token đầu tiên
+        self.classifier = nn.Sequential(
+            nn.Linear(768, 256),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(256, num_classes)
+        )
+
+    def forward(self, x):
+        # x shape: (Batch, Audio_Length)
+        
+        # Trích xuất features từ Wav2Vec2
+        # Nếu frozen=True, dùng no_grad để tiết kiệm bộ nhớ
+        outputs = self.wav2vec2(x).last_hidden_state # (B, T, 768)
+
+        # Đi qua Transformer Encoder
+        # Self-attention diễn ra tại đây
+        trans_out = self.transformer_encoder(outputs) # (B, T, 768)
+
+        # Global Average Pooling theo chiều thời gian (T)
+        # Điều này giúp model tổng hợp thông tin từ toàn bộ đoạn âm thanh
+        context = torch.mean(trans_out, dim=1) # (B, 768)
+
+        # Phân loại
+        logits = self.classifier(context)
+        return logits
+
 # Architecture 1: Wav2Vec2 + BiLSTM + Attention (Implementation depends on your specific code)
 class Wav2Vec2_BiLSTM_Attention(nn.Module):
     def __init__(self):
@@ -229,6 +278,28 @@ def load_all_models():
         traceback.print_exc()
         load_errors.append(msg)
 
+    # Load Model 3 — Wav2Vec2 Transformer
+    try:
+        model3_path = os.path.join(model_dir, 'Wav2Vec2-Transformer.pt')
+        print(f"[MODEL LOADER] Model3 path exists: {os.path.exists(model3_path)}")
+        if os.path.exists(model3_path):
+            model3 = Wav2Vec2_Transformer()
+            model3.load_state_dict(torch.load(model3_path, map_location=device, weights_only=False))
+            model3.to(device)
+            model3.eval()
+            loaded_models['wav2vec2-transformer'] = model3
+            print("[MODEL LOADER] ✅ Loaded Model 3: Wav2Vec2_Transformer")
+        else:
+            msg = f"Model3 NOT FOUND at {model3_path}"
+            print(f"[MODEL LOADER] ❌ {msg}")
+            load_errors.append(msg)
+    except Exception as e:
+        import traceback
+        msg = f"Model3 load error: {str(e)}"
+        print(f"[MODEL LOADER] ❌ {msg}")
+        traceback.print_exc()
+        load_errors.append(msg)
+
 # Call this immediately when server starts
 load_all_models()
 
@@ -357,7 +428,7 @@ def predict_emotion():
     
     try:
         # 🌟 Extract features based on which model is selected
-        if selected_model_id == 'wav2vec2-bilstm':
+        if selected_model_id == 'wav2vec2-bilstm' or selected_model_id == 'wav2vec2-transformer':
             features = extract_features_for_wav2vec2(audio_file)
         elif selected_model_id == '3dcnn-bilstm':
             features = extract_features_for_3dcnn(audio_file)
