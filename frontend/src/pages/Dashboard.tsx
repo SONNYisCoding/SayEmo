@@ -4,6 +4,7 @@ import { UploadCloud, Mic, Square, Play, Loader2, Sparkles, AlertCircle, Brain }
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import axios from 'axios';
 import { useOutletContext } from 'react-router-dom';
+import { LoadingAnimation } from '../components/LoadingAnimation';
 
 const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -198,7 +199,11 @@ export const Dashboard: React.FC = () => {
             )}
 
             {/* Results Section */}
-            {result && (
+            {isInferring ? (
+                <div className="flex justify-center w-full pb-12">
+                    <LoadingAnimation />
+                </div>
+            ) : result && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 fade-in duration-700 pb-12">
                     <div className="lg:col-span-1 bg-gradient-to-br from-surface/80 to-surface/40 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-4 opacity-10">

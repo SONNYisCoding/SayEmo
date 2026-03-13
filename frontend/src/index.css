@@ -39,3 +39,16 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
+
+/* Custom Audio Player Styling for Dark Theme */
+.custom-audio {
+  filter: invert(1) hue-rotate(180deg) sepia(15%) saturate(150%) brightness(0.9) contrast(1.1);
+  border-radius: 9999px;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+.custom-audio:hover {
+  opacity: 1;
+  filter: invert(1) hue-rotate(180deg) sepia(15%) saturate(150%) brightness(1) contrast(1.2);
+}

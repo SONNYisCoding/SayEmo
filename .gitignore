@@ -30,3 +30,10 @@ backend/models/
 *.pt
 .env
 .env.production
+
+patch_notebook_regex.py
+patch_notebook.py
+temp_analyze.py
+temp_analyze2.py
+temp_analyze.txt
+*.ipynb

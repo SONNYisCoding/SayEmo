@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './pages/Dashboard';
 import { Abstract } from './pages/Abstract';
 import { Timeline } from './pages/Timeline';
 import { Menu, X } from 'lucide-react';
+import { LoadingAnimation } from './components/LoadingAnimation';
 import type { ModelMetric } from './types';
+import axios from 'axios';
+
+const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const MOCK_MODELS: ModelMetric[] = [
   { id: 'wav2vec2-bilstm', name: 'Wav2Vec2 BiLSTM Attention', accuracy: 0.80, f1_score: 0.82, status: 'active' },
@@ -54,6 +58,47 @@ function Layout() {
 }
 
 function App() {
+  const [isBackendReady, setIsBackendReady] = useState(false);
+
+  useEffect(() => {
+    // Poll the health endpoint until it responds
+    const checkBackend = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_URL}/api/health`, { timeout: 10000 });
+        if (res.status === 200) {
+          setIsBackendReady(true);
+        }
+      } catch (err) {
+        // Backend might still be spinning up
+      }
+    };
+
+    checkBackend();
+    
+    // Set up polling every 5 seconds if not ready
+    const interval = setInterval(() => {
+        if (!isBackendReady) {
+            checkBackend();
+        }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isBackendReady]);
+
+  if (!isBackendReady) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-background text-text-primary overflow-hidden font-sans selection:bg-primary-500/30">
+          <div className="fixed inset-0 pointer-events-none z-0">
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary-600/20 blur-[120px] rounded-full mix-blend-screen" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-500/10 blur-[120px] rounded-full mix-blend-screen" />
+          </div>
+          <div className="relative z-10">
+              <LoadingAnimation />
+          </div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>
