@@ -5,11 +5,11 @@ export const Abstract: React.FC = () => {
     return (
         <div className="max-w-5xl mx-auto pb-16 w-full pt-8 relative">
             <div className="flex flex-col items-center text-center space-y-6 pt-4">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight animate-fade-in-up" style={{ animationDelay: '100ms' }}>
                     SayEmo | Emotions in Your Voice
                 </h1>
 
-                <div className="flex flex-wrap justify-center gap-8 md:gap-16 pt-8">
+                <div className="flex flex-wrap justify-center gap-8 md:gap-16 pt-8 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
                     <div className="flex flex-col items-center">
                         <span className="text-primary-400 font-bold text-lg md:text-xl">Nguyen Minh Triet</span>
                         <span className="text-text-secondary/60 text-sm mt-1.5">Contributor</span>
@@ -28,7 +28,7 @@ export const Abstract: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-6 pt-10">
+                <div className="flex flex-wrap justify-center gap-6 pt-10 animate-fade-in-up" style={{ animationDelay: '500ms' }}>
                     <button className="flex items-center gap-3 bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-full text-sm font-bold transition-all hover:-translate-y-0.5 shadow-lg border border-white/5 tracking-wider">
                         <FileText className="w-5 h-5 text-primary-400" />
                         REPORT PDF
@@ -44,9 +44,9 @@ export const Abstract: React.FC = () => {
                 </div>
             </div>
 
-            <div className="w-full h-[1px] bg-white/10 mt-14 mb-12"></div>
+            <div className="w-full h-[1px] bg-white/10 mt-14 mb-12 animate-fade-in-up" style={{ animationDelay: '600ms' }}></div>
 
-            <div className="max-w-[900px] mx-auto">
+            <div className="max-w-[900px] mx-auto animate-fade-in-up" style={{ animationDelay: '700ms' }}>
                 <h2 className="text-4xl font-extrabold text-white text-center mb-10 tracking-tight">Abstract</h2>
 
                 <div className="text-text-secondary text-lg md:text-xl leading-relaxed whitespace-pre-wrap font-medium">

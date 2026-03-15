@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type { PredictionResponse } from '../types';
 import { UploadCloud, Mic, Square, Play, Loader2, Sparkles, AlertCircle, Brain } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import axios from 'axios';
 import { useOutletContext } from 'react-router-dom';
 import { LoadingAnimation } from '../components/LoadingAnimation';
@@ -11,6 +10,43 @@ const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 const chartColors = [
     '#6366f1', '#ec4899', '#8b5cf6', '#14b8a6', '#f59e0b', '#ef4444', '#3b82f6',
 ];
+
+const AnimatedNumber = ({ value, duration = 1200, delay = 0 }: { value: number, duration?: number, delay?: number }) => {
+    const [count, setCount] = useState(0);
+
+    useEffect(() => {
+        let startTime: number | null = null;
+        let animationFrame: number;
+        let timeout: ReturnType<typeof setTimeout>;
+
+        const animate = (timestamp: number) => {
+            if (!startTime) startTime = timestamp;
+            const progress = timestamp - startTime;
+            const percentage = Math.min(progress / duration, 1);
+            
+            const easeOut = 1 - Math.pow(1 - percentage, 3);
+            
+            setCount(value * easeOut);
+
+            if (progress < duration) {
+                animationFrame = requestAnimationFrame(animate);
+            } else {
+                setCount(value);
+            }
+        };
+
+        timeout = setTimeout(() => {
+            animationFrame = requestAnimationFrame(animate);
+        }, delay);
+
+        return () => {
+            clearTimeout(timeout);
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+        };
+    }, [value, duration, delay]);
+
+    return <span>{count.toFixed(1)}</span>;
+};
 
 export const Dashboard: React.FC = () => {
     // Get selected model name from layout context
@@ -253,7 +289,7 @@ export const Dashboard: React.FC = () => {
                                 />
                             </div>
                             <span className="text-emerald-300 font-bold whitespace-nowrap">
-                                {(result.confidence * 100).toFixed(1)}%
+                                <AnimatedNumber value={result.confidence * 100} />%
                             </span>
                         </div>
                         <p className="text-xs text-text-secondary mt-6 border-t border-white/10 pt-4">
@@ -263,24 +299,31 @@ export const Dashboard: React.FC = () => {
 
                     <div className="lg:col-span-2 bg-surface/50 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl h-[320px] flex flex-col">
                         <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-6">Probability Distribution</h3>
-                        <div className="flex-1 w-full -ml-4">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={result.results} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
-                                    <XAxis type="number" hide domain={[0, 1]} />
-                                    <YAxis dataKey="emotion" type="category" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} />
-                                    <Tooltip
-                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                        contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }}
-                                        itemStyle={{ color: '#fff' }}
-                                        formatter={(value: any) => [`${(Number(value) * 100).toFixed(1)}%`, 'Confidence']}
-                                    />
-                                    <Bar dataKey="probability" radius={[0, 6, 6, 0]} barSize={24} animationDuration={1500}>
-                                        {result.results.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} opacity={0.9} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
+                        <div className="flex-1 w-full flex flex-col justify-center gap-3">
+                            {result.results.map((item, index) => {
+                                const color = chartColors[index % chartColors.length];
+                                return (
+                                    <div key={item.emotion} className="flex items-center gap-4 group">
+                                        <div className="w-20 text-right text-text-secondary text-sm font-semibold capitalize group-hover:text-white transition-colors duration-300">
+                                            {item.emotion}
+                                        </div>
+                                        <div className="flex-1 h-6 bg-white/5 rounded-r-full relative overflow-hidden">
+                                            <div
+                                                className="absolute top-0 left-0 h-full rounded-r-full shadow-lg animate-slide-in-bar"
+                                                style={{
+                                                    width: `${item.probability * 100}%`,
+                                                    backgroundColor: color,
+                                                    boxShadow: `0 0 15px ${color}60`,
+                                                    animationDelay: `${index * 150}ms`
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="w-12 text-left text-xs font-bold text-white/80 group-hover:text-white transition-colors duration-300">
+                                            <AnimatedNumber value={item.probability * 100} delay={index * 150} />%
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
