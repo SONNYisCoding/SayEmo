@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import type { PredictionResponse } from '../types';
 import { UploadCloud, Mic, Square, Play, Loader2, Sparkles, AlertCircle, Brain } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -22,6 +22,32 @@ export const Dashboard: React.FC = () => {
     const [isInferring, setIsInferring] = useState(false);
     const [result, setResult] = useState<PredictionResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isBackendReady, setIsBackendReady] = useState(false);
+
+    useEffect(() => {
+        // Poll the health endpoint until it responds
+        const checkBackend = async () => {
+            try {
+                const res = await axios.get(`${BACKEND_URL}/api/health`, { timeout: 10000 });
+                if (res.status === 200) {
+                    setIsBackendReady(true);
+                }
+            } catch (err) {
+                // Backend might still be spinning up
+            }
+        };
+
+        checkBackend();
+        
+        // Set up polling every 5 seconds if not ready
+        const interval = setInterval(() => {
+            if (!isBackendReady) {
+                checkBackend();
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [isBackendReady]);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<BlobPart[]>([]);
@@ -108,13 +134,19 @@ export const Dashboard: React.FC = () => {
 
     return (
         <div className="max-w-4xl mx-auto space-y-10">
-            <header className="space-y-2">
-                <h1 className="text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
-                    Emotion Analysis Panel
-                    <Sparkles className="w-6 h-6 text-amber-400 animate-pulse" />
-                </h1>
-                <p className="text-text-secondary text-lg">Upload an audio file or record a voice snippet to detect emotions.</p>
-            </header>
+            {!isBackendReady ? (
+                <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                    <LoadingAnimation />
+                </div>
+            ) : (
+                <>
+                    <header className="space-y-2">
+                        <h1 className="text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
+                            Emotion Analysis Panel
+                            <Sparkles className="w-6 h-6 text-amber-400 animate-pulse" />
+                        </h1>
+                        <p className="text-text-secondary text-lg">Upload an audio file or record a voice snippet to detect emotions.</p>
+                    </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Upload Card */}
@@ -252,6 +284,8 @@ export const Dashboard: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            )}
+            </>
             )}
         </div>
     );
